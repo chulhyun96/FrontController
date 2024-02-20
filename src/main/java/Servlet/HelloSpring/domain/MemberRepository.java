@@ -1,6 +1,8 @@
 package Servlet.HelloSpring.domain;
 
 
+import lombok.Getter;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -10,13 +12,8 @@ public class MemberRepository {
     private Map<Long, Member> repository = new HashMap<Long, Member>();
     private Long sequence = 0L;
 
+    @Getter
     private static final MemberRepository instance = new MemberRepository();
-
-    public static MemberRepository getInstance() {
-        return instance;
-    }
-
-
     public Member save(Member member) {
         member.setId(++sequence);
         repository.put(member.getId(), member);
