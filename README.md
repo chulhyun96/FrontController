@@ -327,7 +327,8 @@ public class MemberSaveControllerV3 implements ControllerV3 {
         return modelView;  
     }
 ```
-각각 요청에 맞는 로직을 작성해주는데, 가장 큰 차이점은 requset.setAttribute() 메서드와 getRequestDispatcher("viewName") 메서드를 ModelView.getModel이, viewName은 ModelView의 생성자가 대체함으로써 더이상 servlet에 종속적이지 않다는 것이다.
+각각 요청에 맞는 로직을 작성해주는데, 가장 큰 차이점은 requset.setAttribute() 메서드와 getRequestDispatcher("viewName") 메서드를 ModelView.getModel(), viewName은 ModelView의 생성자가 대체함으로써 더이상 servlet에 종속적이지 않다는 것이다.
+그리고 forward는 MyView가 대체해준다.
 
 modelView.getModel()메서드는 Map<String, Object> 를 반환함으로써 request.setAttribute와 완벽히 호환된다고 볼 수 있다.
 
