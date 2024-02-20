@@ -1,6 +1,6 @@
 package Servlet.HelloSpring.domain.web.frontcontroller.v2;
 
-import Servlet.HelloSpring.domain.web.frontcontroller.FormV2View;
+import Servlet.HelloSpring.domain.web.frontcontroller.MyView;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -31,7 +31,7 @@ public class FrontControllerV2 extends HttpServlet {
             return;
         }
 
-        FormV2View view = controllerV2.service(request, response);
+        MyView view = controllerV2.service(request, response);
         view.render(request, response);
     }
 }

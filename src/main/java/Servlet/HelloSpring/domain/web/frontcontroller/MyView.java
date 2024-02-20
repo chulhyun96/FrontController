@@ -6,9 +6,9 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
-public class FormV2View {
+public class MyView {
     String viewPath;
-    public FormV2View(String viewPath) {
+    public MyView(String viewPath) {
         this.viewPath = viewPath;
     }
     public void render(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
