@@ -58,7 +58,6 @@ public class MvcMemberFormServlet extends HttpServlet {
 그리고 이렇게 HttpServlet에 의존하게 되면 테스트 코드 작성 등 개발 효율성이 저하되며, "로직이 중복된다" 라는 이유만으로도 충분히 개선의 여지가 존재한다.
 
 ## ***Version1*** ##
-### Version1 ###
 
 ![[Pasted image 20240220150526.png]]
 <프론트 컨트롤러 Version1의 기본 구조>
@@ -140,4 +139,76 @@ public class FrontControllerV1 extends HttpServlet {
 결론 : 기존의 Servlet을 이용하여 코드를 작성할 경우에, 각 컨트롤러(요청을 처리할 Servlet)들은 URL 매핑 정보를 가지고 있어야 되며, 모든 컨트롤러들은 HttpServlet을 상속받아야 하는 번거러움이 있었다.
 
 이를 해결하기 위해 컨트롤러들의 앞(Front) 프론트 컨트롤러 클래스에 모든 URL 요청이 본인을 거쳐가게 한다음에 HttpServlet 상속도 딱 한번 받게 함으로써 코드의 중앙집중화가 가능해졌다.
+
+
+## ***Version2*** ##
+View의 분리
+
+기존 V1의 코드에서 보면 각 컨트롤러들은 아직도 코드의 중복되는 로직을 가지고 있다.
+```java
+String viewPath = "/WEB-INF/views/new-form.jsp";
+  RequestDispatcher dispatcher = request.getRequestDispatcher(viewPath);
+  dispatcher.forward(request, response);
+```
+바로 View로 forward하는 부분이다.
+
+중복되는 부분이 있다면 개선의 여지가 있다는 뜻이다.
+![[Pasted image 20240220154758.png]]
+version2의 다이어 그램
+
+이번엔 MyView라는 클래스를 만들어서 요청 시 프론트 컨트롤러를 거친 후 요청에 맞는 컨트롤러를 호출한다. 그 후 View를 반환하여 MyView 클래스의 render()를 호출한다.
+
+
+```java
+public class MyView {  
+    String viewPath;  
+    public MyView(String viewPath) {  
+        this.viewPath = viewPath;  
+    }  
+    public void render(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {  
+        request.getRequestDispatcher(viewPath).forward(request, response);  
+    }  
+}
+```
+
+```java
+public interface ControllerV2 {  
+    MyView service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException;  
+}
+```
+각각의 컨트롤러들이 구현할 인터페이스의 반환 타입으로 MyView를 반환하게 해준다.
+
+```java
+@WebServlet("/front-controller/v2/*")  
+public class FrontControllerV2 extends HttpServlet {  
+    private final Map<String, ControllerV2> controllerV2Map = new HashMap<>();  
+  
+    public FrontControllerV2() {  
+        controllerV2Map.put("/front-controller/v2/members/new-form", new MemberFormControllerV2());  
+        controllerV2Map.put("/front-controller/v2/members/save", new MemberSaveControllerV2());  
+        controllerV2Map.put("/front-controller/v2/members/members", new MemberListControllerV2());  
+    }  
+  
+    @Override  
+    protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {  
+        String requestURI = request.getRequestURI();  
+        ControllerV2 controllerV2 = controllerV2Map.get(requestURI);  
+  
+        if (controllerV2 == null) {  
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);  
+            return;  
+        }  
+  
+        MyView view = controllerV2.service(request, response);  
+        view.render(request, response);  
+    }  
+}
+```
+그 후 프론트 컨트롤러에서는 결과를 MyView클래스에서 처리할 수 있도록 view.render 메서드를 호출 함으로써 좀 더 객체지향적인 코드를 가지게 된다.
+
+그럼 요청이 들어올 때, <p style="color: green">해당 url 매핑 정보와 맞는 컨트롤러가 호출 되고, 컨트롤러의 service 로직이 실행 된후 MyView 객체에 View로 보여줄 path를 담아 반환하면 MyView에서 이를 처리하여 forward한다.</p>
+
+결론 : V1 - 컨트롤러 인터페이스 도입 후 Service메서드를 일괄처리 할 수 있게 해주며 HttpServlet도 프론트 컨트롤러에서만 상속받는다. 이러면 각각의 컨트롤러가 url 매핑 정보를 갖고 있지 않아도 되고, HttpServlet을 상속받지 않아도 된다.
+
+그럼 각각의 컨트롤러들은 요청 정보에 맞는 로직을 실행 후 View로 forward 해줘야 하는 로직이 중복되어있었는데, 이를 MyView 클래스에게 책임을 위임함으로써 컨트롤러들은 좀 더 책임에 자유로워 진다.
 
