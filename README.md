@@ -398,6 +398,6 @@ V2, V3의 save 로직 비교
 ![[Pasted image 20240220165523.png]]
 servlet의 종속성을 제거하고, Map으로 이를 대체하였다. 그 뒤 servlet의 종속성을 제거 하였으므로 setAttribute메서드를 사용할 수 없으니, ModelView 클래스가 이를 대체하였다.
 
-결론 : 좀 더 코드가 복잡해지고, 클래스가 늘어났다. 이는 HttpServlet의 종속성을 제거하기 위해서 여러 단계로 나눴기 때문이다.  
-HttpServlet을 의존하고 있는 클래스는 FrontController와 MyView의 render 메서드 뿐이다. 허나 아직도 여전히 코드의 중복은 보인다. (내가 보기에는 종속성을 제거 하고 유연하게 하기 위해 쪼개고 쪼갠 것 뿐. 결국 setAttribute에 해당하는 model.getModel() 메서드는 중복될 것이다.)
+결론 : 좀 더  클래스가 늘어났다. 이는 HttpServlet의 종속성을 제거하기 위해서 여러 단계로 나눴기 때문이다.  
+HttpServlet을 의존하고 있는 클래스는 FrontController와 MyView의 render 메서드 뿐이다.
 
