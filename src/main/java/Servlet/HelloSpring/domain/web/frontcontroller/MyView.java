@@ -17,7 +17,7 @@ public class MyView {
     }
 
     public void render(Map<String, Object> model, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        model.forEach((key, value) -> request.setAttribute(key, value));
+        model.forEach(request::setAttribute);
         request.getRequestDispatcher(viewPath).forward(request, response);
     }
 }

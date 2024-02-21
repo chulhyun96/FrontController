@@ -11,6 +11,7 @@ public class MemberSaveControllerV3 implements ControllerV3 {
 
     @Override
     public ModelView process(Map<String, String> paraMap) {
+        //createParaMap 메서드에 저장되어있는 쿼리 파라미터의 값을 꺼내온다
         String username = paraMap.get("username");
         int age = Integer.parseInt(paraMap.get("age"));
 
