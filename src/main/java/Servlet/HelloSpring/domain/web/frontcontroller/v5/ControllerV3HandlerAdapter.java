@@ -25,11 +25,7 @@ public class ControllerV3HandlerAdapter implements MyHandlerAdapter {
         return controller.process(paraMap);
     }
     private Map<String, String> createParaMap(HttpServletRequest request) {
-        // 웹에서 파라미터로 넘어온 정보를 모두 조회해준뒤  HashMap에 저장함 -> 그 뒤 process 메서드의 파라미터로 넘김.
         Map<String, String> paraMap = new HashMap<>();
-        //Request 객체로 받은 모든 요청 파라미터 정보를 조회함
-        //예를 들어, 요청 URL이 ?username=john&age=30일 경우,
-        //paraMap은 {"username": "john", "age": "30"}과 같은 형태로 채워집니다.
         request.getParameterNames().asIterator()
                 .forEachRemaining(paraInfo -> paraMap.put(paraInfo, request.getParameter(paraInfo)));
         return paraMap;

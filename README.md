@@ -401,3 +401,217 @@ servlet의 종속성을 제거하고, Map으로 이를 대체하였다. 그 뒤 
 결론 : 좀 더  클래스가 늘어났다. 이는 HttpServlet의 종속성을 제거하기 위해서 여러 단계로 나눴기 때문이다.  
 HttpServlet을 의존하고 있는 클래스는 FrontController와 MyView의 render 메서드 뿐이다.
 
+## ***Version5*** ##
+
+#### 어댑터 패턴
+만약 어떤 A라는 개발자가  ControllerV4 인터페이스를 이용하길 희망하고
+B라는 개발자는 ControllerV3 인터페이스를 이용하길 희망할 경우.... 라고 가정해보자.
+
+그럼 하나의 프로젝트를 수행함에 있어서 둘중에 어떤 인터페이스를 사용할 지에 대한 타협이 필요한데, 어댑터 패턴은 이 둘 다 호환이 가능하게 하는것이 가능하다.
+
+```java
+public interface ControllerV4 {  
+    /**  
+     *     * @param paraMap  
+     * @param model  
+     * @return viewName  
+     */    String process(Map<String, String> paraMap, Map<String, Object> model);  
+}
+```
+```java
+import Servlet.HelloSpring.domain.web.frontcontroller.ModelView;  
+  
+import java.util.Map;public interface ControllerV3 {  
+    ModelView process(Map<String, String> paraMap);  
+  
+}
+```
+
+![[Pasted image 20240221210721.png]]
+- 핸들러 어댑터 : 핸들러(컨트롤러)중간에 핸들러 어댑터를 추가한다. 여기서 핸들러 어댑터가 어댑터 역할을 해주기 때문에 다양한 종류의 핸들러(컨트롤러)를 호출 할 수 있다.
+
+- 핸들러 : 컨트롤러의 이름을 더 넓은 범위로 핸들러라고 부른다. 왜냐하면 이제는 핸들러 어댑터가 존재하기 때문에, 꼭 컨트롤러의 개념뿐만이 아니라, 어떠한 것이든 해당하는 종류의 어댑터만 있으면 다 처리할 수 있기에 핸들러라고 부른다.
+
+```java
+ public interface MyHandlerAdapter {
+
+      boolean supports(Object handler);
+
+      ModelView handle(HttpServletRequest request, HttpServletResponse response,
+  Object handler) throws ServletException, IOException;
+  }
+```
+- boolean supports(Object handler);
+  -> Adapter가 해당 컨트롤러를 처리할 수 있는지 판단하는 메서드이다.
+
+- ModelView handle(HttpServletRequest request, HttpServletResponse response, Object handler) throws ServletException, IOException;
+  -> Adapter는 실제 컨트롤러를 호출하고, 그 결과로 ModelView를 반환해야한다.
+
+만약 실제 컨트롤러가 ModelView를 반환하지 못한다면, 어댑터가 ModelView를 직접 생성해서라도 반환해야한다.
+
+이전에는 프론트 컨트롤러가 실제 컨트롤러를 호출했지만 이제는 이 어댑터를 통해서 실제 컨트롤러가 호출 된다.
+
+```java
+public class ControllerV3HandlerAdapter implements MyHandlerAdapter {  
+    @Override  
+    public boolean supports(Object handler) {  
+        return (handler instanceof ControllerV3);  
+    }  
+  
+    @Override  
+    public ModelView handle(HttpServletRequest request, HttpServletResponse response, Object handler) throws ServletException, IOException {  
+        ControllerV3 controller = (ControllerV3) handler;  
+  
+        Map<String, String> paraMap = createParaMap(request);  
+  
+        return controller.process(paraMap);  
+    }  
+    private Map<String, String> createParaMap(HttpServletRequest request) {  
+        Map<String, String> paraMap = new HashMap<>();  
+        request.getParameterNames().asIterator()  
+                .forEachRemaining(paraInfo -> paraMap.put(paraInfo, request.getParameter(paraInfo)));  
+        return paraMap;  
+    }  
+}
+```
+그리고 MyHandlerAdapter 인터페이스를 구현할 구현체인 ControllerV3HandlerAdapter를 만들어서 구현하게 해준다.
+
+ControllerV4도 마찬가지로 작업해준다.
+
+```java
+public class ControllerV4HandlerAdapter implements MyHandlerAdapter {  
+    @Override  
+    public boolean supports(Object handler) {  
+        return (handler instanceof ControllerV4);  
+    }  
+    @Override  
+    public ModelView handle(HttpServletRequest request, HttpServletResponse response, Object handler) throws ServletException, IOException {  
+        ControllerV4 controller = (ControllerV4) handler;  
+  
+        Map<String, String> paraMap = createParaMap(request);  
+        Map<String, Object> model = new HashMap<>();  
+  
+        String viewName = controller.process(paraMap, model);  
+  
+        ModelView mv = new ModelView(viewName);  
+        mv.setModel(model);  
+  
+        return mv;  
+    }  
+    private Map<String, String> createParaMap(HttpServletRequest request) {  
+        Map<String, String> paramMap = new HashMap<>();  
+        request.getParameterNames().asIterator()  
+                .forEachRemaining(paramName -> paramMap.put(paramName,  
+                        request.getParameter(paramName)));  
+        return paramMap;  
+    }  
+}
+```
+
+
+ControllerV4HandlerAdapter와 V3HandlerAdapter의 로직이 조금 다른데 그 이유는 서로 반환하는 타입이 다르기 때문이다.
+
+V3는 ModelView를 반환, V4는 String을 반환하기 때문에 String을 반환받아서 ModelView에 담아서 반환시켜준다.
+
+
+  ```java
+  @WebServlet("/front-controller/v5/*")  
+public class FrontControllerV5 extends HttpServlet {  
+    private final Map<String, Object> handlerMappingMap = new HashMap<>();  
+    //여러개의 어댑터가 담겨있고, 내가 그중에서 하나를 찾아 꺼내 쓰기 위한 List    private final List<MyHandlerAdapter> handlerAdapters = new ArrayList<>();  
+  
+    public FrontControllerV5() {  
+        initHandlerMapping();  
+        initHandlerAdapters();  
+    }  
+  
+    private void initHandlerMapping() {  
+        handlerMappingMap.put("/front-controller/v5/v3/members/new-form", new MemberFormControllerV3());  
+        handlerMappingMap.put("/front-controller/v5/v3/members/save", new MemberSaveControllerV3());  
+        handlerMappingMap.put("/front-controller/v5/v3/members", new MemberListControllerV3());  
+  
+        handlerMappingMap.put("/front-controller/v5/v4/members/new-form", new MemberFormControllerV4());  
+        handlerMappingMap.put("/front-controller/v5/v4/members/save", new MemberSaveControllerV4());  
+        handlerMappingMap.put("/front-controller/v5/v4/members", new MemberListControllerV4());  
+    }  
+  
+    private void initHandlerAdapters() {  
+        handlerAdapters.add(new ControllerV3HandlerAdapter());  
+        handlerAdapters.add(new ControllerV4HandlerAdapter());  
+    }  
+  
+    @Override  
+    protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {  
+        //url정보를 통해서 핸들러 조회,  
+        Object handler = getHandler(request);  
+        if (handler == null) {  
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);  
+            return;  
+        }  
+  
+        //조회된 핸들러를 핸들러어댑터 목록에서 어댑터를 꺼내옴  
+        MyHandlerAdapter adapter = getHandlerAdapter(handler);  
+  
+        //핸들러 어댑터가 적절한 핸들러한테 핸들을 호출하면 ModelView를 반환  
+        ModelView mv = adapter.handle(request, response, handler);  
+  
+        //그리고 ViewResolver를 호출해서 MyView 정보를 반환받는다  
+        MyView myView = viewResolver(mv.getViewName());  
+  
+        //그럼 MyView가 렌더를 호출 -> HTML로 응답  
+        myView.render(mv.getModel(), request, response);  
+  
+    }  
+  
+    private MyView viewResolver(String viewName) {  
+        return new MyView("/WEB-INF/views/" + viewName + ".jsp");  
+    }  
+  
+    private Object getHandler(HttpServletRequest request) {  
+        String requestURI = request.getRequestURI();  
+        System.out.println("requestURI = " + requestURI);  
+  
+        return handlerMappingMap.get(requestURI);  
+    }  
+  
+    private MyHandlerAdapter getHandlerAdapter(Object handler) {  
+        for (MyHandlerAdapter adapter : handlerAdapters) {  
+            if (adapter.supports(handler)) {  
+                return adapter;  
+            }  
+        }  
+        throw new IllegalArgumentException("handler not found this.handler = " + handler);  
+    }  
+}
+```
+
+```java
+      //url정보를 통해서 핸들러 조회,  
+        Object handler = getHandler(request);  
+        if (handler == null) {  
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);  
+            return;  
+        }  
+  
+        //조회된 핸들러를 핸들러어댑터 목록에서 어댑터를 꺼내옴  
+        MyHandlerAdapter adapter = getHandlerAdapter(handler);  
+  
+        //핸들러 어댑터가 적절한 핸들러한테 핸들을 호출하면 ModelView를 반환  
+        ModelView mv = adapter.handle(request, response, handler);  
+  
+        //그리고 ViewResolver를 호출해서 MyView 정보를 반환받는다  
+        MyView myView = viewResolver(mv.getViewName());  
+  
+        //그럼 MyView가 렌더를 호출 -> HTML로 응답  
+        myView.render(mv.getModel(), request, response);  
+```
+해당 service로직이 메인 부분이라고 할 수 있는데,
+핸들러 조회 -> 조회 후 어댑터를 꺼내온 뒤 handle 메서드를 통해 ModelView를 반환 ->
+여기서 handle 메서드는 MyHandlerAdapter 인터페이스에 정의된 ModelView를 반환하는 handle메서드를호출하고 ModelView를 반환 -> ModelView의 동적인 이름을 통해 MyView 객체를 생성해서 반환하고 렌더 메서드를 통해 forward하는 흐름이다.
+
+
+V4와의 차이점 : V4에서는 V3의 구조와 거의 비슷하며 구현하는 개발자 입장에서는 ModelView를 반환하는게 아닌 String을 반환해줬었다. 그리고V5에서는 **어댑터**를 도입. MyHandlerAdapter 인터페이스를 만들어서 구현체들이 각각의 로직을 구현할 수 있게 맡김으로써 더 유연하고 확장성있게 설계를 했다.
+
+이제 여기서 다른 기능(Controller를 통한 기능)이 이루어진다면 FrontController에 URL 매핑 정보와, MyHandlerAdapter 인터페이스를 구현하게 하여 구현체만 만들어 두면 손댈게 없다.
+SOLID 원칙의 OCP 원칙을 철저히 지키고 있다고 볼 수 있다.
+
