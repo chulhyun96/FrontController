@@ -16,5 +16,6 @@ public class MvcMemberFormServlet extends HttpServlet {
         String viewPath = "/WEB-INF/views/new-form.jsp";
         RequestDispatcher path = request.getRequestDispatcher(viewPath);
         path.forward(request, response);
+        return null;
     }
 }

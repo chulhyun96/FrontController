@@ -26,11 +26,6 @@ public class FrontControllerV2 extends HttpServlet {
         String requestURI = request.getRequestURI();
         ControllerV2 controllerV2 = controllerV2Map.get(requestURI);
 
-        if (controllerV2 == null) {
-            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            return;
-        }
-
         MyView view = controllerV2.service(request, response);
         view.render(request, response);
     }

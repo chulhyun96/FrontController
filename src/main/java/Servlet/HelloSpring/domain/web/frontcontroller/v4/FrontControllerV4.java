@@ -30,7 +30,6 @@ public class FrontControllerV4 extends HttpServlet {
 
         if (controllerV4 == null) {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            return;
         }
         Map<String, String> paraMap = createParaMap(request);
         Map<String , Object> model = new HashMap<>();

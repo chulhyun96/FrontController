@@ -48,6 +48,7 @@ public class MemberListServlet extends HttpServlet {
         w.write("</table>");
         w.write("</body>");
         w.write("</html>");
+        return null;
     }
 }
 

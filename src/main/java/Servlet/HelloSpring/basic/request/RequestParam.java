@@ -30,6 +30,7 @@ public class RequestParam extends HttpServlet {
         response.getWriter().write("username = " + username +"\n");
         response.getWriter().write("age = " + age +"\n");
         // 멤버리스트를 꺼내와서 username과 age를 입력할거임
+        return null;
     }
 
 }

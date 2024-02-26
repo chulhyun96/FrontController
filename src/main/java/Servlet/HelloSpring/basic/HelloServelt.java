@@ -25,5 +25,6 @@ public class HelloServelt extends HttpServlet {
         resp.getWriter().write("hello");
 
 
+        return null;
     }
 }

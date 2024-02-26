@@ -27,9 +27,10 @@ public class FrontControllerV1 extends HttpServlet {
 
         if (controllerV1 == null) {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            return;
+            return null;
 
         }
         controllerV1.service(request,response);
+        return null;
     }
 }

@@ -12,10 +12,11 @@ public class MyView {
     public MyView(String viewPath) {
         this.viewPath = viewPath;
     }
+    //ControllerV3
     public void render(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         request.getRequestDispatcher(viewPath).forward(request, response);
     }
-
+    //ControllerV4
     public void render(Map<String, Object> model, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         model.forEach(request::setAttribute);
         request.getRequestDispatcher(viewPath).forward(request, response);

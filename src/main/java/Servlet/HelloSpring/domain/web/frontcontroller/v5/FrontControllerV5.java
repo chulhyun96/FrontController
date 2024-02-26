@@ -54,7 +54,6 @@ public class FrontControllerV5 extends HttpServlet {
         Object handler = getHandler(request);
         if (handler == null) {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            return;
         }
 
         //조회한 핸들러어댑터 가져와
@@ -69,6 +68,7 @@ public class FrontControllerV5 extends HttpServlet {
 
         //그럼 MyView가 렌더를 호출 -> HTML로 응답
         myView.render(mv.getModel(), request, response);
+
 
     }
 

@@ -31,13 +31,11 @@ public class FrontControllerV3 extends HttpServlet {
 
         if (controllerV3 == null) {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            return;
         }
         HashMap<String, String> paraMap = createParaMap(request);
         ModelView mv = controllerV3.process(paraMap);
 
         MyView view = viewResolver(mv.getViewName());
-
         view.render(mv.getModel(), request, response);
     }
 
